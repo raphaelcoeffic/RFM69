@@ -254,6 +254,7 @@ bool RFM69::canSend()
     setMode(RF69_MODE_STANDBY);
     return true;
   }
+  delay(1);
   return false;
 }
 
@@ -279,6 +280,7 @@ bool RFM69::sendWithRetry(uint16_t toAddress, const void* buffer, uint8_t buffer
     sentTime = millis();
     while (millis() - sentTime < retryWaitTime)
     {
+      yield();
       if (ACKReceived(toAddress)) return true;
     }
   }
@@ -343,9 +345,10 @@ void RFM69::sendFrame(uint16_t toAddress, const void* buffer, uint8_t bufferSize
 
   // no need to wait for transmit mode to be ready since its handled by the radio
   setMode(RF69_MODE_TX);
-  //uint32_t txStart = millis();
+  uint32_t txStart = millis();
   //while (digitalRead(_interruptPin) == 0 && millis() - txStart < RF69_TX_LIMIT_MS); // wait for DIO0 to turn HIGH signalling transmission finish
-  while ((readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PACKETSENT) == 0x00); // wait for PacketSent
+  while ((readReg(REG_IRQFLAGS2) & RF_IRQFLAGS2_PACKETSENT) == 0x00
+         && millis() - txStart < RF69_TX_LIMIT_MS); // wait for PacketSent
   setMode(RF69_MODE_STANDBY);
 }
 
